@@ -1,0 +1,5 @@
+analysis,roi,n_subjects,n_features_in_pca,PC1_explained_variance_ratio
+non_volume,Left_Hippocampus,96,18,0.4182557790836638
+non_volume,Right_Hippocampus,96,18,0.4107646285690427
+non_volume,Left_Thalamus,96,18,0.3146654778209956
+non_volume,Right_Thalamus,96,18,0.32676025166526457

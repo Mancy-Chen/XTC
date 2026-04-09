@@ -1,0 +1,11 @@
+fold,feature_rank_in_fold,feature_index,feature_name
+3,0,239,Right_Thalamus_original_shape_MinorAxisLength_delta
+3,1,240,Left_Hippocampus_original_shape_Sphericity_delta
+3,2,241,Left_Thalamus_original_shape_Sphericity_delta
+3,3,242,Right_Hippocampus_original_shape_Sphericity_delta
+3,4,243,Right_Thalamus_original_shape_Sphericity_delta
+3,5,244,Left_Hippocampus_original_shape_SurfaceArea_delta
+3,6,245,Left_Thalamus_original_shape_SurfaceArea_delta
+3,7,246,Right_Hippocampus_original_shape_SurfaceArea_delta
+3,8,249,Left_Thalamus_original_shape_SurfaceVolumeRatio_delta
+3,9,251,Right_Thalamus_original_shape_SurfaceVolumeRatio_delta

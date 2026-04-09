@@ -1,0 +1,3 @@
+analysis,structure,rois_included,n,pearson_r,pearson_p,spearman_rho,spearman_p,pearson_q_fdr,spearman_q_fdr
+firstorder_only,Hippocampus,Left_Hippocampus;Right_Hippocampus,96,0.06099265476729404,0.5549726320176495,0.0015541900469948089,0.9880095078276718,0.6206728702958285,0.9880095078276718
+firstorder_only,Thalamus,Left_Thalamus;Right_Thalamus,96,0.05114712935248315,0.6206728702958285,0.04066914498538904,0.6940110525457655,0.6206728702958285,0.9880095078276718

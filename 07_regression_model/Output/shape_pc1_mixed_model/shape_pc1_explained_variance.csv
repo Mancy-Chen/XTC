@@ -1,0 +1,5 @@
+roi,n_features,n_subjects,PC1_explained_variance_ratio
+Left_Hippocampus,14,96,0.4006920820225602
+Right_Hippocampus,14,96,0.42623283088725333
+Left_Thalamus,14,96,0.5367447968572131
+Right_Thalamus,14,96,0.5046554318104929

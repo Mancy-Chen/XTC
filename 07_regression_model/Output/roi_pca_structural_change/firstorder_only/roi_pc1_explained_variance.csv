@@ -1,0 +1,5 @@
+analysis,roi,n_subjects,n_features_in_pca,PC1_explained_variance_ratio
+firstorder_only,Left_Hippocampus,96,18,0.4182557790836638
+firstorder_only,Right_Hippocampus,96,18,0.4107646285690427
+firstorder_only,Left_Thalamus,96,18,0.3146654778209956
+firstorder_only,Right_Thalamus,96,18,0.32676025166526457

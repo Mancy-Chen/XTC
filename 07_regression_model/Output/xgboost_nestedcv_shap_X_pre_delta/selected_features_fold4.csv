@@ -1,0 +1,11 @@
+fold,feature_rank_in_fold,feature_index,feature_name
+4,0,3,Right_Thalamus_original_firstorder_10Percentile_pre
+4,1,20,Left_Hippocampus_original_firstorder_Kurtosis_pre
+4,2,21,Left_Thalamus_original_firstorder_Kurtosis_pre
+4,3,78,Right_Hippocampus_original_shape_Flatness_pre
+4,4,99,Right_Thalamus_original_shape_Maximum2DDiameterSlice_pre
+4,5,113,Left_Thalamus_original_shape_Sphericity_pre
+4,6,150,Right_Hippocampus_original_firstorder_Kurtosis_delta
+4,7,201,Left_Thalamus_original_shape_Elongation_delta
+4,8,216,Left_Hippocampus_original_shape_Maximum2DDiameterColumn_delta
+4,9,229,Left_Thalamus_original_shape_Maximum3DDiameter_delta

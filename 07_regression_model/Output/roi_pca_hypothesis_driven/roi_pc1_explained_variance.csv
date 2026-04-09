@@ -1,0 +1,5 @@
+roi,n_subjects,n_features_in_pca,PC1_explained_variance_ratio
+Left_Hippocampus,96,32,0.28160020144937264
+Right_Hippocampus,96,32,0.2684299674307253
+Left_Thalamus,96,32,0.30338275944011667
+Right_Thalamus,96,32,0.28184566987433896

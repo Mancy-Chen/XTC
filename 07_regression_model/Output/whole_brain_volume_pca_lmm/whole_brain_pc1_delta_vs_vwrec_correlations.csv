@@ -1,0 +1,2 @@
+metric,n,pearson_r,pearson_p,spearman_rho,spearman_p
+PC1_delta_vs_vwrec,56,0.05374562491837201,0.694017630635865,-0.13652192985732045,0.31571538502119084
