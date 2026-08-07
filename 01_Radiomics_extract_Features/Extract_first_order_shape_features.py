@@ -9,9 +9,9 @@ import SimpleITK as sitk
 from radiomics import featureextractor
 
 
-IMAGE_ROOT = "/data/projects/CSC/code/XTC/01_Segmentation/fastsurfer-test/my_fastsurfer_analysis"
-MASK_ROOT = "/data/projects/CSC/code/XTC/04_SynthSR/Whole_data/segment_output"
-OUTPUT_DIR = "/data/projects/CSC/code/XTC/05_Radiomics_Mancy"
+IMAGE_ROOT = ".../XTC/01_Segmentation/fastsurfer-test/my_fastsurfer_analysis"
+MASK_ROOT = ".../XTC/04_SynthSR/Whole_data/segment_output"
+OUTPUT_DIR = ".../XTC/05_Radiomics_Mancy"
 OUTPUT_CSV = os.path.join(OUTPUT_DIR, "radiomics_firstorder_shape_hippocampus_thalamus.csv")
 
 TARGET_LABELS = {
