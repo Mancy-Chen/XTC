@@ -66,6 +66,10 @@ def main() -> None:
     model_rows, coefficient_rows = [], []
     for analysis in combined:
         d = data.copy()
+        # ANCOVA-style presentation: follow-up delayed recall is the outcome,
+        # with baseline delayed recall retained as a covariate. The stored
+        # change score is follow-up minus baseline.
+        d["vwrec_followup"] = d["vwrec_pre"] + d["vwrec_delta"]
         d["delta_pc1_c"] = centered(d[f"{analysis}_PC1_delta"])
         d["pc1_pre_c"] = centered(d[f"{analysis}_PC1_pre"])
         d["vwrec_pre_c"] = centered(d["vwrec_pre"])
@@ -76,8 +80,8 @@ def main() -> None:
         for clean, col in POLYSUBSTANCE_COLS.items(): d[f"{clean}_c"] = centered(d[col])
         d["sex"] = d["sex"].astype("category")
         formulas = {
-            "without_polysubstance": "vwrec_delta ~ delta_pc1_c + pc1_pre_c + vwrec_pre_c + brainseg_c + log_dose_c + age_c + C(sex) + iq_c",
-            "with_polysubstance": "vwrec_delta ~ delta_pc1_c + pc1_pre_c + vwrec_pre_c + brainseg_c + log_dose_c + age_c + C(sex) + iq_c + cannabis_c + tobacco_c + alcohol_c + amphetamine_c + cocaine_c",
+            "without_polysubstance": "vwrec_followup ~ delta_pc1_c + pc1_pre_c + vwrec_pre_c + brainseg_c + log_dose_c + age_c + C(sex) + iq_c",
+            "with_polysubstance": "vwrec_followup ~ delta_pc1_c + pc1_pre_c + vwrec_pre_c + brainseg_c + log_dose_c + age_c + C(sex) + iq_c + cannabis_c + tobacco_c + alcohol_c + amphetamine_c + cocaine_c",
         }
         for model_type, formula in formulas.items():
             result = smf.ols(formula, data=d).fit()

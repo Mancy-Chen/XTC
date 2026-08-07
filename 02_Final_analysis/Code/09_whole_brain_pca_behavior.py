@@ -38,6 +38,10 @@ def main() -> None:
     pd.DataFrame(rows).to_csv(CORR_WHOLE_BRAIN_PCA_OUT / "whole_brain_pc1_raw_adjusted_spearman.csv", index=False)
 
     d = data.copy()
+    # ANCOVA-style presentation: follow-up delayed recall is the outcome,
+    # with baseline delayed recall retained as a covariate. The stored
+    # change score is follow-up minus baseline.
+    d["vwrec_followup"] = d["vwrec_pre"] + d["vwrec_delta"]
     d["delta_pc1_c"] = centered(d["PC1_delta"])
     d["pc1_pre_c"] = centered(d["PC1_pre"])
     d["vwrec_pre_c"] = centered(d["vwrec_pre"])
@@ -49,8 +53,8 @@ def main() -> None:
     d["sex"] = d["sex"].astype("category")
 
     common = "vwrec_pre_c + brainseg_c + log_dose_c + age_c + C(sex) + iq_c + cannabis_c + tobacco_c + alcohol_c + amphetamine_c + cocaine_c"
-    base_formula = f"vwrec_delta ~ {common}"
-    full_formula = f"vwrec_delta ~ delta_pc1_c + pc1_pre_c + {common}"
+    base_formula = f"vwrec_followup ~ {common}"
+    full_formula = f"vwrec_followup ~ delta_pc1_c + pc1_pre_c + {common}"
     base = smf.ols(base_formula, data=d).fit()
     full = smf.ols(full_formula, data=d).fit()
 
