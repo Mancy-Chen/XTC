@@ -3,8 +3,8 @@ import glob
 import re
 import pandas as pd
 
-ROOT_DIR = "/data/projects/CSC/code/XTC/04_SynthSR/Whole_data/segment_output"
-OUTPUT_DIR = "/data/projects/CSC/code/XTC/05_Radiomics_Mancy"
+ROOT_DIR = ".../XTC/04_SynthSR/Whole_data/segment_output"
+OUTPUT_DIR = ".../XTC/05_Radiomics_Mancy"
 
 LONG_CSV = os.path.join(OUTPUT_DIR, "all_stats_files_long.csv")
 WIDE_CSV = os.path.join(OUTPUT_DIR, "all_stats_files_wide_volume.csv")
