@@ -100,7 +100,7 @@ def get_subject_pairs():
             "aparc.DKTatlas+aseg.deep.withCC.mgz"
         )
 
-        if os.path.exists(mask_path):opt/amc/freesurfer-/
+        if os.path.exists(mask_path):
             pairs.append((subject_base, img_path, mask_path))
         else:
             print(f"[WARN] Missing mask for {subject_base}: {mask_path}")
