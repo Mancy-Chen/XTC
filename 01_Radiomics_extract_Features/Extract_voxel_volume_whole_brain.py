@@ -20,17 +20,17 @@ from radiomics import featureextractor
 # ============================================================
 
 IMAGE_ROOT = (
-    "/data/projects/CSC/code/XTC/01_Segmentation/"
+    ".../XTC/01_Segmentation/"
     "fastsurfer-test/my_fastsurfer_analysis"
 )
 
 MASK_ROOT = (
-    "/data/projects/CSC/code/XTC/04_SynthSR/"
+    ".../XTC/04_SynthSR/"
     "Whole_data/segment_output"
 )
 
 OUTPUT_DIR = (
-    "/data/projects/CSC/code/XTC/05_Radiomics_Mancy"
+    ".../XTC/05_Radiomics_Mancy"
 )
 
 OUTPUT_LONG_CSV = os.path.join(
