@@ -189,7 +189,7 @@ def bootstrap_loading_plot(summary: pd.DataFrame, path) -> None:
 def main() -> None:
     ensure_dirs([PLOT_ROI_VOLUME_OUT, PLOT_PREDEFINED_PCA_OUT, PLOT_WHOLE_BRAIN_PCA_OUT, PLOT_BOOTSTRAP_OUT])
 
-    # Main Figure 1: corrected I221 data, adjusted right hippocampus only.
+    # Main Figure 1: validated deidentified data, adjusted right hippocampus only.
     # BrainSegVol is intentionally not plotted because its corrected
     # association with delayed-recall change is not statistically significant.
     roi = read_csv_numeric(CORR_ROI_VOLUME_OUT / "roi_voxelvolume_raw_adjusted_change_dataset.csv")

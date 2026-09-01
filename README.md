@@ -132,7 +132,7 @@ The final analysis pipeline is located in:
 | `11_make_plots.py` | Generates manuscript- and supplementary-quality figures from the analysis outputs. |
 | `12_spatial_loading_projection.py` | Projects PC1–PC5 regional loadings into a FastSurfer segmentation atlas and generates spatial loading visualizations. |
 | `13_build_results_index.py` | Builds an index of generated output files. |
-| `sav_legacy_reader.py` | Provides a fallback reader for the legacy compressed SPSS `.sav` format used by this project when `pyreadstat` is unavailable. |
+| `sav_legacy_reader.py` | Legacy SPSS reader retained for reference; not used by the deidentified pipeline. |
 | `utils.py` | Shared data-processing, modeling, FDR, export, and utility functions. |
 | `run_all.py` | Runs the complete final-analysis sequence in order and stops if a step fails. |
 
@@ -145,33 +145,31 @@ The final analysis pipeline is located in:
 ├── demographics/
 │   ├── imaging_covariates_n95_log1p.csv
 │   ├── behavioral_replication_n95_log1p.csv
-│   └── brainsegvol_pre_delta_n95.csv
+│   ├── brainsegvol_pre_delta_n95.csv
+│   └── demographics_n95_deidentified.csv
 ├── radiomics_predefine_roi/
 │   └── predefined_roi_radiomics_n95_log1p.csv
 ├── radiomics_whole_brain/
-│   └── whole_brain_voxelvolume_n95_log1p.csv
-└── source_original/
-    └── merged_all.sav
+    └── whole_brain_voxelvolume_n95_log1p.csv
 ```
 
-These participant-level datasets are restricted research data and are intentionally not included in the public repository.
+These six participant-level CSVs are restricted research data and are intentionally not included in the public repository. Obtain the deidentified data package through the study's approved data-sharing process and copy its `Input/` folder into `02_Final_analysis/`. The earlier data-only package requires its five `analysis_inputs/` CSVs plus `supplementary/demographics_n95_deidentified.csv` placed under `Input/demographics/`.
+
+All files must use the same reassigned IDs (`XTC001`–`XTC095`). The behavioral file uses the key `studnr`; other files use `subject_id`. The validator checks linkage, outcome changes, dose transformations and BrainSegVol units without referencing original IDs. The demographic table reads the demographic CSV; no raw SPSS file is required. The single combined convenience CSV is not a replacement for these six inputs.
+
+Source-format units are preserved: the dedicated BrainSegVol CSV uses mm³; the baseline BrainSegVol covariate in other imaging inputs uses cm³. The code handles this conversion. BrainSegVol is not ICV.
 
 ## Environment for the final analysis
 
-A dedicated conda environment is recommended. For example:
+Use Python 3.10 or newer. From the repository root:
 
 ```bash
-conda create -n xtc-final -c conda-forge \
-    python=3.10 \
-    "numpy>=1.26,<2" \
-    pandas scipy scikit-learn statsmodels matplotlib \
-    pyreadstat nibabel \
-    -y
-
-conda activate xtc-final
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r 02_Final_analysis/requirements.txt
 ```
 
-The NumPy 1.x constraint is retained for compatibility with scientific Python packages that may have been compiled against the NumPy 1.x binary interface.
+On Windows, activate with `.venv\Scripts\activate`. Install `nibabel` separately only if generating anatomical loading maps. MRI feature extraction has its own dependencies listed above.
 
 ## Running the final pipeline
 
@@ -250,7 +248,7 @@ random seed = 20260806
 
 `12_spatial_loading_projection.py` maps whole-brain PC1–PC5 regional loadings back into a FastSurfer `aparc.DKTatlas+aseg.deep.withCC.mgz` segmentation.
 
-The default atlas path is specific to the Amsterdam UMC HPC. On another system, it can be overridden with:
+The optional atlas defaults to `02_Final_analysis/Input/spatial_atlas/atlas.mgz`. It can be overridden with:
 
 ```bash
 export XTC_SPATIAL_ATLAS=/path/to/aparc.DKTatlas+aseg.deep.withCC.mgz
@@ -295,6 +293,22 @@ The pipeline organizes results into folders for:
 This repository provides research code for reproducibility of the associated XTC/MDMA longitudinal MRI analyses. Participant-level data are not publicly distributed because they contain restricted research information.
 
 The code is intended for research and manuscript reproducibility. It is not a clinical diagnostic tool and should not be used to make individual-level clinical predictions.
+
+## Deidentified-input adaptation and validation
+
+The code now supports the deidentified CSV package. Statistical model formulas, feature-selection rules, covariates, FDR families and resampling settings are unchanged. `utils.py` loads statsmodels only when model/FDR helpers are called.
+
+Verified for this adaptation: all code compiled; five input tests passed; the demographic table matched the archived table exactly; PCA explained variance and loadings matched within numerical tolerance; all 1,000 bootstrap resamples completed. Regression and mixed-effects stages were not rerun because statsmodels installation was blocked in the verification environment. Anatomical maps were skipped because an atlas was not supplied. This is not a claim that the complete adapted pipeline has been rerun.
+
+Run input tests after placing the approved data locally:
+
+```bash
+python -m unittest discover -s 02_Final_analysis/Code -p 'test_*.py'
+```
+
+Known source-data issues are retained and reported: four missing imaging ages; different behavioral and imaging age values; and a left hippocampal first-order 10th-percentile change column with no baseline counterpart. The existing paired-feature PCA selection excludes that unpaired feature. Do not silently substitute age sources. Reordered deidentified participants may produce small differences in random resampling results even with the same seed.
+
+The demographic CSV contains baseline IQ only, so the auxiliary demographic summary leaves follow-up IQ missing; the main table already displays follow-up IQ as NA. Raw SPSS reading is no longer part of the active pipeline.
 
 ## License
 

@@ -1,13 +1,4 @@
-"""Project whole-brain PC1-PC5 regional loadings into a FastSurfer MGZ atlas.
-
-Default atlas:
-/data/projects/CSC/code/XTC/04_SynthSR/Whole_data/segment_output/
-I010_sessie1/mri/aparc.DKTatlas+aseg.deep.withCC.mgz
-
-Set XTC_SPATIAL_ATLAS to override the path. If the atlas is unavailable, the
-script writes a status JSON and exits successfully so the portable pipeline can
-still run outside the Amsterdam UMC HPC.
-"""
+"""Project loadings using an optional external atlas set by XTC_SPATIAL_ATLAS."""
 from __future__ import annotations
 
 import json
@@ -267,7 +258,7 @@ def main() -> None:
         import nibabel as nib
     except ImportError as error:
         raise ImportError(
-            "nibabel is required for spatial projection. Install requirements.txt."
+            "nibabel is required for spatial projection. Run: python -m pip install nibabel"
         ) from error
 
     atlas_image = nib.load(str(SPATIAL_ATLAS_PATH))

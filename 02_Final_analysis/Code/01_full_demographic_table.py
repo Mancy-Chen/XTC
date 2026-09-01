@@ -1,9 +1,4 @@
-"""Generate the complete Supplementary Table S2 from merged_all.sav.
-
-The final N=95 subject list and XTC classification come from the canonical
-behavioral input. Demographic, education, XTC-timing, and raw substance-use
-values are retrieved from merged_all.sav at sessions 1 and 3.
-"""
+"""Generate Supplementary Table S2 from the deidentified demographic CSV."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,8 +7,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from config import BEHAVIOR_INPUT, DEMOGRAPHICS_OUT, MERGED_ALL_SAV
-from sav_legacy_reader import read_sav_portable
+from config import BEHAVIOR_INPUT, DEMOGRAPHICS_OUT, DEMOGRAPHICS_INPUT
 from utils import ensure_dirs
 
 SESSION_NAMES = {1.0: "Initial examination", 3.0: "Follow-up"}
@@ -46,22 +40,6 @@ EDUCATION_LABELS = {
     7.0: "Higher professional/university (HBO/WO)",
     8.0: "Higher professional/university (HBO/WO)",
 }
-
-
-def replace_declared_missing(
-    dataframe: pd.DataFrame,
-    metadata: dict,
-    columns: list[str],
-) -> pd.DataFrame:
-    result = dataframe.copy()
-    metadata_by_name = {
-        variable.get("name"): variable for variable in metadata.get("variables", [])
-    }
-    for column in columns:
-        variable = metadata_by_name.get(column, {})
-        for missing_value in variable.get("missing_values", []) or []:
-            result.loc[result[column] == missing_value, column] = np.nan
-    return result
 
 
 def describe(series: pd.Series) -> dict[str, float]:
@@ -109,50 +87,48 @@ def education_category(value: float) -> str | float:
     return EDUCATION_LABELS.get(float(value), np.nan)
 
 
+def markdown_table(table):
+    def cell(value):
+        return str(value).replace("|", "\\|").replace("\n", " ")
+    lines = ["| " + " | ".join(map(cell, table.columns)) + " |",
+             "| " + " | ".join(["---"] * len(table.columns)) + " |"]
+    lines.extend("| " + " | ".join(map(cell, row)) + " |" for row in table.itertuples(index=False, name=None))
+    return "\n".join(lines)
+
+
 def main() -> None:
     ensure_dirs([DEMOGRAPHICS_OUT])
-    if not MERGED_ALL_SAV.exists():
-        raise FileNotFoundError(MERGED_ALL_SAV)
-
-    raw, metadata = read_sav_portable(MERGED_ALL_SAV)
-    required = sorted(set(SOURCE_VARIABLES.values()))
-    missing_columns = [column for column in required if column not in raw.columns]
-    if missing_columns:
-        raise KeyError(f"merged_all.sav is missing required variables: {missing_columns}")
-
-    raw = replace_declared_missing(raw, metadata, required)
-    raw["STUDNR"] = raw["STUDNR"].astype(str).str.strip().str.upper()
-    raw["SESSIE"] = pd.to_numeric(raw["SESSIE"], errors="coerce")
-
-    canonical = pd.read_csv(BEHAVIOR_INPUT)[["studnr", "xtc_group"]].copy()
-    canonical["studnr"] = canonical["studnr"].astype(str).str.strip().str.upper()
-    if canonical["studnr"].duplicated().any():
-        raise ValueError("Duplicate subjects in canonical behavioral input")
-    if len(canonical) != 95:
-        raise ValueError(f"Expected 95 canonical subjects, found {len(canonical)}")
-
-    selected = raw.loc[
-        raw["STUDNR"].isin(canonical["studnr"]) & raw["SESSIE"].isin([1.0, 3.0]),
-        required,
-    ].copy()
-    selected = selected.merge(
-        canonical,
-        left_on="STUDNR",
-        right_on="studnr",
-        how="inner",
-        validate="many_to_one",
-    )
-
-    if selected.duplicated(["STUDNR", "SESSIE"]).any():
-        duplicates = selected.loc[
-            selected.duplicated(["STUDNR", "SESSIE"], keep=False),
-            ["STUDNR", "SESSIE"],
-        ]
-        raise ValueError(f"Duplicate subject-session rows:\n{duplicates}")
-
-    session_counts = selected.groupby("SESSIE")["STUDNR"].nunique().to_dict()
-    if session_counts != {1.0: 95, 3.0: 95}:
-        raise ValueError(f"Expected 95 subjects at each session, found {session_counts}")
+    participant = pd.read_csv(DEMOGRAPHICS_INPUT)
+    canonical = pd.read_csv(BEHAVIOR_INPUT)[["studnr", "xtc_group"]]
+    for frame, key in [(participant, "subject_id"), (canonical, "studnr")]:
+        frame[key] = frame[key].astype(str).str.strip().str.upper()
+        if frame[key].duplicated().any() or len(frame) != 95:
+            raise ValueError("Demographic inputs require 95 unique participants")
+    if set(participant.subject_id) != set(canonical.studnr):
+        raise ValueError("Demographic participants do not match behavioral input")
+    participant = participant.set_index("subject_id").loc[canonical.studnr].reset_index()
+    if not (participant.xtc_group.to_numpy() == canonical.xtc_group.to_numpy()).all():
+        raise ValueError("Demographic group labels disagree with behavioral input")
+    sessions = []
+    source_columns = {
+        "LEEFT": "age", "HOPLAF": "education_code",
+        "ALUPW": "alcohol_units_per_week", "TSIGPW": "tobacco_cigarettes_per_week",
+        "CA1JTG": "cannabis_joints_last_year", "S1JRTO": "amphetamine_times_last_year",
+        "CO1JTK": "cocaine_times_last_year",
+    }
+    for session, suffix in [(1.0, "baseline"), (3.0, "followup")]:
+        frame = pd.DataFrame({"STUDNR": participant.subject_id, "SESSIE": session,
+                              "xtc_group": participant.xtc_group})
+        for name, base in source_columns.items():
+            frame[name] = participant[f"{base}_{suffix}"]
+        frame["SEX"] = participant["sex_baseline" if session == 1 else "sex_followup_recorded"]
+        frame["IQ"] = participant.IQ_baseline if session == 1 else np.nan
+        # Everyone was XTC-naive at baseline; post-exposure timing is only available at follow-up.
+        frame["XLTTOT"] = 0.0 if session == 1 else participant.XTC_cumulative_tablets_followup
+        frame["XFUWKN"] = np.nan if session == 1 else participant.weeks_since_first_XTC_followup
+        frame["XLTWKN"] = np.nan if session == 1 else participant.weeks_since_last_XTC_followup
+        sessions.append(frame)
+    selected = pd.concat(sessions, ignore_index=True)
 
     selected["education_category"] = selected["HOPLAF"].apply(education_category)
     selected["duration_XTC_use_weeks"] = selected["XFUWKN"] - selected["XLTWKN"]
@@ -195,7 +171,7 @@ def main() -> None:
         )
     participant = pd.DataFrame(participant_rows)
     participant.to_csv(
-        DEMOGRAPHICS_OUT / "participant_level_demographics_n95_from_merged_all.csv",
+        DEMOGRAPHICS_OUT / "participant_level_demographics_n95_deidentified.csv",
         index=False,
     )
 
@@ -297,12 +273,12 @@ def main() -> None:
     markdown = [
         "# Supplementary Table S2. Demographic Characteristics and Use of XTC and Other Substances in the Final Imaging Sample",
         "",
-        table.to_markdown(index=False),
+        markdown_table(table),
         "",
         "**Notes.** Values are mean ± standard deviation (median; range) unless otherwise indicated. "
         "XTC users reported incident XTC use between the initial and follow-up examinations; "
         "XTC-naive participants reported no XTC use during this period. Sex was taken from the "
-        "initial examination because participant I167 had a discordant sex code at follow-up. "
+        "initial examination because one participant had a discordant sex code at follow-up. "
         "Follow-up education was missing for one XTC user and one XTC-naive participant. Duration "
         "of XTC use was calculated as weeks since first use minus weeks since last use. Measures of "
         "alcohol, tobacco, cannabis, amphetamine, and cocaine use refer to use during the preceding year.",
@@ -368,7 +344,7 @@ def main() -> None:
         index=False,
     )
 
-    print("Full demographic table generated from merged_all.sav.")
+    print("Full demographic table generated from deidentified CSV.")
     print(f"Subjects: {len(participant)}; baseline rows: {len(baseline)}; follow-up rows: {len(followup)}")
     print(f"Sex-code discordances: {len(sex_discordance)}")
 

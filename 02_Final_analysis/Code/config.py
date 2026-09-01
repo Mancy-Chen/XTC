@@ -14,15 +14,14 @@ WHOLE_BRAIN_INPUT = INPUT_DIR / "radiomics_whole_brain" / "whole_brain_voxelvolu
 IMAGING_COVARIATES_INPUT = INPUT_DIR / "demographics" / "imaging_covariates_n95_log1p.csv"
 BEHAVIOR_INPUT = INPUT_DIR / "demographics" / "behavioral_replication_n95_log1p.csv"
 BRAINSEGVOL_INPUT = INPUT_DIR / "demographics" / "brainsegvol_pre_delta_n95.csv"
-MERGED_ALL_SAV = INPUT_DIR / "source_original" / "merged_all.sav"
+DEMOGRAPHICS_INPUT = INPUT_DIR / "demographics" / "demographics_n95_deidentified.csv"
 
 # External FastSurfer segmentation used to project regional PCA loadings.
 # Override on another system with the XTC_SPATIAL_ATLAS environment variable.
 import os
 SPATIAL_ATLAS_PATH = Path(os.environ.get(
     "XTC_SPATIAL_ATLAS",
-    "/data/projects/CSC/code/XTC/04_SynthSR/Whole_data/segment_output/"
-    "I010_sessie1/mri/aparc.DKTatlas+aseg.deep.withCC.mgz",
+    str(INPUT_DIR / "spatial_atlas" / "atlas.mgz"),
 ))
 
 PCA_PREDEFINED_OUT = OUTPUT_DIR / "PCA" / "predefined_roi"

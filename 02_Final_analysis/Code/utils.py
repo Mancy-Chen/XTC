@@ -7,8 +7,6 @@ from typing import Iterable
 
 import numpy as np
 import pandas as pd
-import statsmodels.formula.api as smf
-from statsmodels.stats.multitest import multipletests
 
 
 def ensure_dirs(paths: Iterable[Path]) -> None:
@@ -69,6 +67,7 @@ def add_group(df: pd.DataFrame, dose_col: str = "xlttot_sessie3") -> pd.DataFram
 
 def fit_mixedlm(formula: str, data: pd.DataFrame, group_col: str):
     """Fit a random-intercept mixed model with controlled fallbacks."""
+    import statsmodels.formula.api as smf
     errors = []
     for method in ("lbfgs", "powell", "cg"):
         try:
@@ -108,6 +107,7 @@ def tidy_model_result(result, model_name: str, extra: dict | None = None) -> pd.
 
 
 def apply_fdr(df: pd.DataFrame, p_col: str = "p", output_col: str = "FDR_q") -> pd.DataFrame:
+    from statsmodels.stats.multitest import multipletests
     result = df.copy()
     result[output_col] = np.nan
     valid = result[p_col].notna()
