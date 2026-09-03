@@ -1,6 +1,7 @@
 """Create manuscript and supplementary plots, including PC1-PC5 loadings."""
 from __future__ import annotations
 
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -120,7 +121,7 @@ def grouped_scatter(
 
     if show_spearman:
         annotation_lines = []
-        for group in ["XTC users", "XTC-naive"]:
+        for group in GROUP_ORDER:
             if group not in correlation_results:
                 continue
             n, rho, p_value = correlation_results[group]
@@ -154,14 +155,56 @@ def grouped_scatter(
     plt.close(fig)
 
 
-def loading_plot(loadings: pd.DataFrame, label_col: str, loading_col: str, title: str, path, top_n: int = 20) -> None:
+def region_label(feature: str) -> str:
+    """Expand FastSurfer names for anatomical loading figures."""
+    names = {
+        "insula": "insular cortex", "superiorfrontal": "superior frontal cortex",
+        "lateralorbitofrontal": "lateral orbitofrontal cortex",
+        "medialorbitofrontal": "medial orbitofrontal cortex",
+        "ventraldc": "ventral diencephalon", "accumbens_area": "nucleus accumbens",
+        "precentral": "precentral gyrus", "postcentral": "postcentral gyrus",
+        "caudalanteriorcingulate": "caudal anterior cingulate cortex",
+        "rostralanteriorcingulate": "rostral anterior cingulate cortex",
+        "caudalmiddlefrontal": "caudal middle frontal cortex",
+        "rostralmiddlefrontal": "rostral middle frontal cortex",
+        "isthmuscingulate": "isthmus cingulate cortex",
+        "posteriorcingulate": "posterior cingulate cortex",
+        "inferiorparietal": "inferior parietal cortex",
+        "superiorparietal": "superior parietal cortex",
+        "inferiortemporal": "inferior temporal cortex",
+        "middletemporal": "middle temporal cortex",
+        "superiortemporal": "superior temporal cortex",
+        "transversetemporal": "transverse temporal cortex",
+        "lateraloccipital": "lateral occipital cortex",
+        "parsopercularis": "pars opercularis", "parsorbitalis": "pars orbitalis",
+        "parstriangularis": "pars triangularis", "inf_lat_vent": "inferior lateral ventricle",
+        "choroid_plexus": "choroid plexus",
+    }
+    for prefix, side in [("ctx_lh_", "Left"), ("ctx_rh_", "Right"), ("left_", "Left"), ("right_", "Right")]:
+        if feature.startswith(prefix):
+            region = feature[len(prefix):]
+            return side + " " + names.get(region, region.replace("_", " "))
+    return feature.replace("_", " ").capitalize()
+
+
+def roi_feature_label(feature: str) -> str:
+    for region, abbreviation in [("Left_Hippocampus", "LH"), ("Right_Hippocampus", "RH"),
+                                 ("Left_Thalamus", "LT"), ("Right_Thalamus", "RT")]:
+        if feature.startswith(region + "_original_"):
+            feature_class, name = feature[len(region + "_original_"):].split("_", 1)
+            name = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name)
+            return f"{abbreviation}: {name}"
+    return feature
+
+
+def loading_plot(loadings: pd.DataFrame, label_col: str, loading_col: str, title: str, path, top_n: int = 20, ylabel: str = "Feature") -> None:
     plot_data = loadings.dropna(subset=[loading_col]).copy()
     plot_data["absolute_loading"] = plot_data[loading_col].abs()
     plot_data = plot_data.nlargest(top_n, "absolute_loading").sort_values(loading_col)
     fig, ax = plt.subplots(figsize=(10, 8))
-    ax.barh(plot_data[label_col], plot_data[loading_col])
+    ax.barh(plot_data[label_col], plot_data[loading_col], color=["#d62728" if x < 0 else "#1f77b4" for x in plot_data[loading_col]])
     ax.axvline(0, linewidth=1)
-    ax.set_xlabel(f"{loading_col.replace('_loading','')} loading"); ax.set_ylabel("Feature"); ax.set_title(title)
+    ax.set_xlabel(f"{loading_col.replace('_loading','')} loading"); ax.set_ylabel(ylabel); ax.set_title(title)
     fig.tight_layout(); fig.savefig(path, dpi=300, bbox_inches="tight"); plt.close(fig)
 
 
@@ -199,27 +242,24 @@ def main() -> None:
         "vwrec_delta",
         "Adjusted Δ right hippocampal volume (cm³)\n"
         "Residualized for baseline right hippocampal volume and baseline BrainSegVol",
-        "Δ RAVLT delayed recall (vwrec)",
+        "Change in RAVLT delayed recall (words)",
         "Adjusted right hippocampal volume change and delayed-recall change",
         PLOT_ROI_VOLUME_OUT / "right_hippocampus_adjusted_vs_delta_vwrec.png",
         show_spearman=True,
         add_vertical_zero=True,
         figure_size=(12, 8),
-        footnote=(
-            "Spearman correlations are reported; lines and shaded bands show "
-            "descriptive OLS fits with 95% confidence intervals."
-        ),
     )
 
     pre_scores = add_group(read_csv_numeric(PCA_PREDEFINED_OUT / "predefined_roi_pca_scores_wide.csv"))
     pre_corr = read_csv_numeric(CORR_PREDEFINED_PCA_OUT / "predefined_roi_pca_raw_adjusted_dataset.csv")
     pre_scores = pre_scores.merge(pre_corr[[c for c in pre_corr.columns if c.endswith("_adjusted") or c == "subject_id"]], on="subject_id", how="left", validate="one_to_one")
     pre_loadings = read_csv_numeric(PCA_PREDEFINED_OUT / "predefined_roi_pca_loadings.csv")
+    pre_loadings["display_label"] = pre_loadings["feature"].map(roi_feature_label)
     pre_explained = read_csv_numeric(PCA_PREDEFINED_OUT / "predefined_roi_pca_explained_variance.csv")
     for analysis, label in [("Combined_shape_only", "Combined shape-only"), ("Combined_shape_firstorder", "Combined shape + first-order")]:
         subset_loadings = pre_loadings.loc[pre_loadings["analysis"] == analysis]
         for pc in range(1, 6):
-            loading_plot(subset_loadings, "feature", f"PC{pc}_loading", f"{label}: top PC{pc} loadings", PLOT_PREDEFINED_PCA_OUT / f"{analysis}_top20_PC{pc}_loadings.png")
+            loading_plot(subset_loadings, "display_label", f"PC{pc}_loading", f"{label}: top PC{pc} loadings", PLOT_PREDEFINED_PCA_OUT / f"{analysis}_top20_PC{pc}_loadings.png")
         scree_plot(pre_explained.loc[pre_explained.analysis.eq(analysis)], f"{label}: explained variance", PLOT_PREDEFINED_PCA_OUT / f"{analysis}_scree_plot.png")
         grouped_scatter(pre_scores, f"{analysis}_PC1_delta", "vwrec_delta", "Raw ΔPC1", "Δ delayed recall", f"{label}: raw PC1 change and delayed recall", PLOT_PREDEFINED_PCA_OUT / f"{analysis}_raw_delta_PC1_vs_delta_vwrec.png")
         grouped_scatter(pre_scores, f"{analysis}_PC1_delta_adjusted", "vwrec_delta", "Adjusted ΔPC1", "Δ delayed recall", f"{label}: adjusted PC1 change and delayed recall", PLOT_PREDEFINED_PCA_OUT / f"{analysis}_adjusted_delta_PC1_vs_delta_vwrec.png")
@@ -229,8 +269,9 @@ def main() -> None:
     whole_corr = read_csv_numeric(CORR_WHOLE_BRAIN_PCA_OUT / "whole_brain_pc1_raw_adjusted_dataset.csv")
     whole_scores = whole_scores.merge(whole_corr[["subject_id", "PC1_delta_adjusted"]], on="subject_id", how="left", validate="one_to_one")
     whole_loadings = read_csv_numeric(PCA_WHOLE_BRAIN_OUT / "whole_brain_pca_loadings.csv")
+    whole_loadings["display_label"] = whole_loadings["feature"].map(region_label)
     for pc in range(1, 6):
-        loading_plot(whole_loadings, "feature", f"PC{pc}_loading", f"Whole-brain VoxelVolume PCA: top PC{pc} loadings", PLOT_WHOLE_BRAIN_PCA_OUT / f"whole_brain_top20_PC{pc}_loadings.png")
+        loading_plot(whole_loadings, "display_label", f"PC{pc}_loading", f"Top 20 whole-brain PC{pc} loadings", PLOT_WHOLE_BRAIN_PCA_OUT / f"whole_brain_top20_PC{pc}_loadings.png", ylabel="Region")
     scree_plot(read_csv_numeric(PCA_WHOLE_BRAIN_OUT / "whole_brain_pca_explained_variance.csv"), "Whole-brain VoxelVolume PCA: explained variance", PLOT_WHOLE_BRAIN_PCA_OUT / "whole_brain_scree_plot.png")
     grouped_scatter(whole_scores, "PC1_delta", "vwrec_delta", "Raw Δ whole-brain PC1", "Δ delayed recall", "Whole-brain raw PC1 change and delayed recall", PLOT_WHOLE_BRAIN_PCA_OUT / "whole_brain_raw_delta_PC1_vs_delta_vwrec.png")
     grouped_scatter(whole_scores, "PC1_delta_adjusted", "vwrec_delta", "Adjusted Δ whole-brain PC1", "Δ delayed recall", "Whole-brain adjusted PC1 change and delayed recall", PLOT_WHOLE_BRAIN_PCA_OUT / "whole_brain_adjusted_delta_PC1_vs_delta_vwrec.png")

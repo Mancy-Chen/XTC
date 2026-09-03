@@ -1,16 +1,17 @@
-# ignore everything by default
-*
+# Participant-level data and generated results remain local.
+02_Final_analysis/Input/
+02_Final_analysis/Output/
+*.sav
+*.mgz
+*.nii
+*.nii.gz
 
-# keep directories so Git can look inside them
-!*/
-
-# allow these file types
-!*.py
-!*.sh
-
-# optional: ignore git/editor junk explicitly
-.gitignore
+# Local environments and editor/cache files.
+.venv/
+venv/
 .idea/
 __pycache__/
 *.pyc
 .~lock*
+.DS_Store
+.env

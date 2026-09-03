@@ -34,12 +34,6 @@ def analysis_definitions(df: pd.DataFrame) -> dict[str, list[str]]:
             c for c in paired_pre if "_shape_" in c or "_firstorder_" in c
         ],
     }
-    for roi in PREDEFINED_ROIS:
-        roi_cols = [c for c in paired_pre if c.startswith(roi + "_")]
-        definitions[f"{roi}_shape_only"] = [c for c in roi_cols if "_shape_" in c]
-        definitions[f"{roi}_shape_firstorder"] = [
-            c for c in roi_cols if "_shape_" in c or "_firstorder_" in c
-        ]
     return definitions
 
 

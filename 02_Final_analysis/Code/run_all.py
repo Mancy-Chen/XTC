@@ -25,6 +25,7 @@ SCRIPTS = [
     "10_whole_brain_pca_bootstrap.py",
     "11_make_plots.py",
     "12_spatial_loading_projection.py",
+    "14_export_manuscript_tables.py",
     "13_build_results_index.py",
 ]
 

@@ -1,6 +1,7 @@
 """Replicate the previous NeXT RAVLT findings in the final imaging sample."""
 from __future__ import annotations
 
+import json
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -119,6 +120,25 @@ def main() -> None:
     pd.concat(coefficient_tables, ignore_index=True).to_csv(
         OLS_BEHAVIOR_OUT / "behavioral_replication_full_coefficients.csv", index=False
     )
+    # Recognition uses an odds ratio, which is not ranked against partial eta².
+    candidates = [row for row in summaries if row["model"] == "ols"]
+    selected = max(candidates, key=lambda row: row["partial_eta_squared"])
+    selection = {
+        "rule": "Larger adjusted XTC-group partial eta squared among immediate and delayed recall",
+        "candidates": {row["outcome"]: row["partial_eta_squared"] for row in candidates},
+        "selected_outcome": selected["outcome"],
+        "subsequent_analyses": "secondary imaging-memory analyses",
+    }
+    (OLS_BEHAVIOR_OUT / "memory_outcome_selection.json").write_text(
+        json.dumps(selection, indent=2), encoding="utf-8"
+    )
+    # The released imaging inputs contain delayed recall. Avoid silently using
+    # that outcome if a different cohort no longer selects it.
+    if selected["outcome"] != "Delayed recall":
+        raise ValueError(
+            "Immediate recall was selected; regenerate imaging-memory inputs "
+            "and adapt the downstream outcome fields before continuing."
+        )
     print("Behavioral replication completed.")
 
 

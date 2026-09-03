@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import spearmanr
 
 from config import CORR_PREDEFINED_PCA_OUT, GROUP_ORDER, OLS_PREDEFINED_PCA_OUT, PCA_PREDEFINED_OUT, POLYSUBSTANCE_COLS
 from utils import add_group, apply_fdr, centered, ensure_dirs, mean_impute, read_csv_numeric, tidy_model_result, write_text
@@ -48,8 +48,7 @@ def main() -> None:
                 xcol = f"{analysis}_PC1_delta" if adjustment == "raw" else f"{analysis}_PC1_delta_adjusted"
                 subset = sample[[xcol, "vwrec_delta"]].dropna()
                 rho, p = spearmanr(subset[xcol], subset["vwrec_delta"])
-                r, pearson_p = pearsonr(subset[xcol], subset["vwrec_delta"])
-                rows.append({"sample": sample_name, "adjustment": adjustment, "analysis": analysis, "N": len(subset), "Spearman_rho": float(rho), "p": float(p), "Pearson_r": float(r), "Pearson_p": float(pearson_p)})
+                rows.append({"sample": sample_name, "adjustment": adjustment, "analysis": analysis, "N": len(subset), "Spearman_rho": float(rho), "p": float(p)})
             corr_tables.append(apply_fdr(pd.DataFrame(rows)))
     all_corr = pd.concat(corr_tables, ignore_index=True)
     all_corr.to_csv(CORR_PREDEFINED_PCA_OUT / "predefined_roi_pca_raw_adjusted_spearman_all_analyses.csv", index=False)

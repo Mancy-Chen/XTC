@@ -4,11 +4,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
-import statsmodels.formula.api as smf
-from scipy.stats import rankdata, shapiro, spearmanr
+from scipy.stats import shapiro, spearmanr
 
-from config import BRAINSEGVOL_INPUT, CORR_ROI_VOLUME_OUT, GROUP_ORDER, N_PERMUTATIONS, RANDOM_SEED, ROI_VOLUME_COLUMNS, WHOLE_BRAIN_INPUT
+from config import BRAINSEGVOL_INPUT, CORR_ROI_VOLUME_OUT, GROUP_ORDER, N_ASSOCIATION_BOOTSTRAP, ASSOCIATION_BOOTSTRAP_SEED, FDR_ALPHA, ROI_VOLUME_COLUMNS, WHOLE_BRAIN_INPUT
 from utils import add_group, apply_fdr, ensure_dirs, read_csv_numeric
+from association_bootstrap import bootstrap_selected_correlations
 
 
 def residualize(y: pd.Series, predictors: pd.DataFrame) -> pd.Series:
@@ -18,40 +18,6 @@ def residualize(y: pd.Series, predictors: pd.DataFrame) -> pd.Series:
     model = sm.OLS(complete["y"], sm.add_constant(complete.drop(columns="y"))).fit()
     out.loc[complete.index] = model.resid
     return out
-
-
-def _rowwise_spearman(x: np.ndarray, y: np.ndarray) -> np.ndarray:
-    rx = rankdata(x, axis=1)
-    ry = rankdata(y, axis=1)
-    rx = rx - rx.mean(axis=1, keepdims=True)
-    ry = ry - ry.mean(axis=1, keepdims=True)
-    denominator = np.sqrt((rx * rx).sum(axis=1) * (ry * ry).sum(axis=1))
-    return (rx * ry).sum(axis=1) / denominator
-
-
-def permute_group_difference(x: np.ndarray, y: np.ndarray, group: np.ndarray, n_perm: int, seed: int) -> dict:
-    """Vectorized label permutation for the difference in subgroup Spearman rho."""
-    rng = np.random.default_rng(seed)
-    naive = group == "XTC-naive"
-    users = group == "XTC users"
-    rho_n = float(spearmanr(x[naive], y[naive]).statistic)
-    rho_u = float(spearmanr(x[users], y[users]).statistic)
-    observed = rho_n - rho_u
-    n_naive = int(naive.sum())
-    n_total = len(group)
-    exceed = 0
-    completed = 0
-    batch_size = 1000
-    while completed < n_perm:
-        batch = min(batch_size, n_perm - completed)
-        # Sorting random uniforms creates independent random permutations in compiled NumPy code.
-        order = np.argsort(rng.random((batch, n_total)), axis=1)
-        n_idx = order[:, :n_naive]
-        u_idx = order[:, n_naive:]
-        diff = _rowwise_spearman(x[n_idx], y[n_idx]) - _rowwise_spearman(x[u_idx], y[u_idx])
-        exceed += int(np.count_nonzero(np.abs(diff) >= abs(observed)))
-        completed += batch
-    return {"rho_XTC_naive": rho_n, "rho_XTC_users": rho_u, "rho_difference_naive_minus_users": observed, "permutation_p": (exceed + 1) / (n_perm + 1), "n_permutations": n_perm}
 
 
 def main() -> None:
@@ -100,25 +66,11 @@ def main() -> None:
     correlations.to_csv(CORR_ROI_VOLUME_OUT / "roi_voxelvolume_raw_adjusted_spearman.csv", index=False)
     correlations.query("sample != 'Overall' and adjustment == 'adjusted'").to_csv(CORR_ROI_VOLUME_OUT / "table_groupwise_adjusted_spearman.csv", index=False)
 
-    # Supplementary comparison is pre-specified for the two highlighted adjusted outcomes.
-    selected = {"BrainSegVol": outcome_columns["BrainSegVol"]["adjusted"], "Right hippocampus": outcome_columns["Right hippocampus"]["adjusted"]}
-    comparison_rows = []
-    for i, (outcome, col) in enumerate(selected.items()):
-        subset = data[[col, "vwrec_delta", "xtc_group"]].dropna()
-        result = permute_group_difference(subset[col].to_numpy(), subset["vwrec_delta"].to_numpy(), subset["xtc_group"].to_numpy(), N_PERMUTATIONS, RANDOM_SEED + i)
-        result["outcome"] = outcome
-        comparison_rows.append(result)
-    comparisons = apply_fdr(pd.DataFrame(comparison_rows), p_col="permutation_p", output_col="FDR_q")
-    comparisons.to_csv(CORR_ROI_VOLUME_OUT / "selected_adjusted_correlation_group_permutations.csv", index=False)
-
-    slope_rows = []
-    for outcome, col in selected.items():
-        d = data[[col, "vwrec_delta", "xtc_group"]].dropna().copy()
-        d["xtc_group"] = pd.Categorical(d["xtc_group"], categories=["XTC-naive", "XTC users"])
-        model = smf.ols(f"vwrec_delta ~ {col} * C(xtc_group)", data=d).fit()
-        interaction = next((t for t in model.params.index if ":" in t), None)
-        slope_rows.append({"outcome": outcome, "interaction_term": interaction, "B": model.params.get(interaction, np.nan), "SE": model.bse.get(interaction, np.nan), "p": model.pvalues.get(interaction, np.nan), "N": int(model.nobs)})
-    pd.DataFrame(slope_rows).to_csv(CORR_ROI_VOLUME_OUT / "selected_ols_slope_interactions.csv", index=False)
+    bootstrap_selected_correlations(
+        data, correlations, ROI_VOLUME_COLUMNS, CORR_ROI_VOLUME_OUT,
+        n_boot=N_ASSOCIATION_BOOTSTRAP, seed=ASSOCIATION_BOOTSTRAP_SEED,
+        alpha=FDR_ALPHA,
+    )
     print("ROI/BrainSegVol raw and adjusted Spearman analyses completed.")
 
 
