@@ -43,6 +43,8 @@ Raw and residualized volume changes are correlated with memory change using Spea
 
 Only imaging outcomes whose adjusted association has q < .05 in either XTC group enter the exploratory between-group comparison. Here that selects only right hippocampus. The code draws 10,000 participant-level resamples with replacement separately within groups, repeats pooled residualization in every resample, and computes rho_naive minus rho_users. The reported 95% percentile intervals are unadjusted and exploratory; they do not account for outcome selection. No additional FDR adjustment is applied to these intervals. Group-comparison seed: 20260901; numerical sorting makes resampling independent of pseudonym IDs and row order. The current interval is −.175 to .604, with difference .267.
 
+A separate N=95 sensitivity analysis fits pooled HC3-robust OLS models for each baseline-volume-adjusted imaging-change measure. Delayed-recall change is modeled as a function of standardized imaging change, XTC group, their interaction, baseline delayed recall, behavioural-assessment age, sex, IQ, and ln(1 + x)-transformed cannabis, tobacco, alcohol, amphetamine, and cocaine use. Behavioural-assessment age is used consistently for all 95 participants so that the four missing imaging-age values do not reduce the sample. BH FDR is applied across the five imaging outcomes separately for the XTC-naive slope, XTC-user slope, and group interaction. Results are written to `correlations/predefined_roi_voxelvolume/polysubstance_adjusted_imaging_memory_sensitivity.csv`.
+
 ## PCA and imaging–memory models
 
 PCA is fitted separately to 56 combined four-ROI shape features, 127 combined shape/first-order features (56 shape + 71 first-order), and 100 whole-brain regional volumes. The left-hippocampal first-order 10th-percentile change feature is excluded because its baseline counterpart is unavailable. Four hypothalamic regions were excluded upstream; baseline zero/near-zero variance filtering is also applied. Feature manifests identify the retained variables.
@@ -70,7 +72,7 @@ Whole-brain PCA stability uses 1,000 baseline participant resamples (seed 202608
 
 ## Covariates and missing data
 
-The input substance-use variables are already ln(1 + x)-transformed; do not transform them again. Continuous PC1-model predictors are mean-centered, and sex is categorical. Four imaging-age values are mean-imputed in models requiring this covariate. Behavioral and imaging age are distinct source fields; behavioral ages are not substituted for imaging ages. The complete-covariate description therefore has an imaging-age exception.
+The input substance-use variables are already ln(1 + x)-transformed; do not transform them again. Continuous PC1-model predictors are mean-centered, and sex is categorical. Four imaging-age values are mean-imputed in PCA models that require the imaging-age covariate. Behavioral and imaging age are distinct source fields. The new ROI/BrainSegVol imaging–memory sensitivity analysis instead uses behavioural-assessment age consistently for all 95 participants, matching its behavioral covariate definition and avoiding casewise deletion.
 
 The dedicated BrainSegVol CSV stores mm³; baseline BrainSegVol in imaging inputs is in cm³. The code converts units consistently. Baseline BrainSegVol is used in PCA models; concurrent BrainSegVol is used in longitudinal ROI models. Neither is an ICV adjustment.
 
