@@ -22,6 +22,7 @@ Paths below are relative to `Output/`, which is generated locally and excluded f
 | S16: whole-brain PC1 correlations | `manuscript_tables/Table_S16.csv` |
 | S17: fully adjusted whole-brain PC1 regression | `manuscript_tables/Table_S17.csv` |
 | S18–S19: whole-brain PCA stability | `manuscript_tables/Table_S18.csv` and `Table_S19.csv` |
+| Polysubstance-adjusted ROI/BrainSegVol sensitivity analysis | `correlations/predefined_roi_voxelvolume/polysubstance_adjusted_imaging_memory_sensitivity.csv` |
 
 ## Figures and separate captions
 
